@@ -60,8 +60,15 @@ GWASPowerCalculator <- function(OR, maf, N, pval=5e-8, model='binary', Ncase,...
   power = do.call("cbind",power)
   colnames(power) = OR
   rownames(power) = maf
-  class(power) <- 'GPC'
-  return (power)
+
+  #attr(power, "model") <- model
+
+  result <- list(power = power,
+                 model = model)
+
+
+  #class(power) <- 'GPC'
+  return (result)
 
 
 }
