@@ -5,7 +5,7 @@ An R package for calculating the GWAS power based on the ddds ratio, minor allel
 To install directly from Github:
 ```r
 require(devtools)
-devtools::install_github("CESP-ExpHer/GCP")
+devtools::install_github("CESP-ExpHer/GPC")
 ```
 
 ## Description
