@@ -2,13 +2,84 @@
 % Please edit documentation in R/GPC.R
 \name{GPC}
 \alias{GPC}
-\title{Title}
+\title{GWAS Power Calculator}
 \usage{
 GPC(x, ...)
 }
 \arguments{
-\item{...}{}
+\item{OR}{A vector of odds ratio}
+
+\item{maf}{A vector of minor allele frequency}
+
+\item{N}{The total sample number}
+
+\item{pval}{p-value; (the default value is 5e-8)}
+
+\item{model}{The regression model used either linear or binary}
+
+\item{Ncase}{The number of Case (applicable only if model is 'binary')}
 }
 \description{
-Title
+It calculate the GWAS power based on the odds ratio, minor allele frequency,
+number of subject and the p-value (default = 5e-8)
+}
+\details{
+Statistical power is the probability that the test will reject the null hypothesis \eqn{H_0}
+at the given significance threshold when the data follow a specific alternation hypothesis \eqn{H_1}.
+In GWAS, \eqn{H_1} is specified by fixing the study design such as total sample size, case and controls counts
+and parameters describing the variants such as MAF and effect size.
+
+By assuming that the sampling distribution of effect size estimate \eqn{\beta} is Normal,
+we have \eqn{ \hat\beta \sim N(\beta, SE^2)}, where \eqn{\beta = 0}, the Wald's test statistic
+\eqn{z = \hat\beta / SE} is distributed approximately as \eqn{z \sim N(0, 1)}, which is used to derived p-value.
+The other way to get a p-value is from the chi-square distribution as \eqn{z^2 \sim \chi^2_1}.
+The chi-square distribution is often used since we need to consider only the upper tail of the distribution
+to compute p-value.
+
+However, we need to consider the variant has a non-zero effect such that \eqn{\beta \neq 0}.  Then
+\eqn{z \sim N(\beta/SE, 1)} and \eqn{z^2 \sim \chi^2_1((\beta/SE)^2)}, which is called a chi-square distribution
+with 1 degree of freedom and non-centrality parameter \eqn{NCP = (\beta / SE)^2}. When \eqn{\beta = 0},
+we use the standard central chi-square distribution \eqn{\chi^2_1 = \chi^2_1(0)}.
+}
+\section{Ingredients of power}{
+
+\itemize{
+ \item {Sample Sieze N} : {Increasing sample size increases power}
+ \item {Effect Size \eqn{\beta}} : {Increasing the absolute value of effect size increases power}
+ \item {Minor Allele Frequency \eqn{f}} : {Increasing MAF increases power}
+ \item {Significant threshold \eqn{\alpha}} : {Increasing the threshold increases power}
+ \item {Case-Control Proportion \eqn{\phi}} : {Moving \eqn{\phi} closer to 0.5 increases power}
+}
+}
+
+\section{For linear models}{
+
+For the linear model \eqn{y = \mu + x\beta + \epsilon}
+
+SE of \eqn{\hat\beta} is \eqn{ SE = {\sigma \over \sqrt {Var(x)n}}} = \eqn{ \sigma \over \sqrt {2f(1-f)n}} approximately,
+where \eqn{f} is \eqn{maf}.  The  \eqn{Var(x)} is, under Hardy-Weinberg equilibrium,
+approximately \eqn{2f(1-f)}, and \eqn{\sigma} is the standard deviation of the error term
+\eqn{\epsilon : \sigma^2 = Var(y) - \beta^2Var(x)}. In a typical GWAS, the effects of variants
+on the total phenotype variance are small, and then we can assume that the error variance
+\eqn{\sigma^2 = Var(y)} approximately, which is 1 if the phenotype is processed by quantile normalization.
+
+Now we can write down the \eqn{NCP} of linear GWAS model as
+\deqn{NCP = ({\beta \over SE})^2 = {2f(1-f)n\beta^2 \over \sigma^2}}
+}
+
+\section{For binary models}{
+
+For binary case-control analyzed by logistics regression,
+\eqn{SE = {1 \over \sqrt {Var(x)n\phi (1-\phi)}} = {1 \over \sqrt {2f(1-f)n\phi (1-\phi)}}}.
+
+Now we can write down the \eqn{NCP} of binary (logistics) GWAS model as
+\deqn{NCP = ({\beta \over SE})^2 = 2f(1-f)n \phi (1-\phi) \beta^2}
+}
+
+\examples{
+\dontrun{
+library(GPC)
+GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='linear')
+GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='binary', Ncase = 100)
+}
 }
