@@ -8,7 +8,10 @@ Please read the description using 'help()' in R
 library(GPC)
 help(GPC)
 ```
+
+
 ## Example
+#### 1. Linear Model
 ```r
 # If the GWAS was analyzed by linear model, give model argument as 'linear'
 GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='linear')
@@ -27,6 +30,8 @@ MAF|  1.2   1.3    1.4     1.5     1.6
 0.3| 0.26% 5.56%  32.45% 73.84%  95.54% 
 --------------------------------------- 
 ```
+
+#### 2. Logistics Model
 ```r
 # If the GWAS was analyzed by logistics model, give model argument as 'binary'
 GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 1500, model ='binary', Ncase = 500)
