@@ -1,6 +1,13 @@
 ## GPC
 An R package for calculating the GWAS power based on the ddds ratio, minor allele frequency and number of sample.
 
+## Intallation
+To install directly from Github:
+```r
+require(devtools)
+devtools::install_github("CESP-ExpHer/GCP")
+```
+
 ## Description
 Please read the description using 'help()' in R 
 
