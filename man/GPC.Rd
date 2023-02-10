@@ -80,6 +80,6 @@ Now we can write down the \eqn{NCP} of binary (logistics) GWAS model as
 \dontrun{
 library(GPC)
 GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='linear')
-GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='binary', Ncase = 100)
+GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 1500, model ='binary', Ncase = 500)
 }
 }

@@ -62,6 +62,7 @@
 #' @param pval p-value; (the default value is 5e-8)
 #' @param model The regression model used either linear or binary
 #' @param Ncase The number of Case (applicable only if model is 'binary')
+#' @param meta Put 'fix' if you want to calculate power for fixed effect of meta analysis
 #'
 #' @export
 #'
@@ -69,7 +70,7 @@
 #' \dontrun{
 #' library(GPC)
 #' GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='linear')
-#' GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 500, model ='binary', Ncase = 100)
+#' GPC(OR = c(1.2,1.3,1.4,1.5,1.6), maf = c(0.1, 0.2, 0.3), N = 1500, model ='binary', Ncase = 500)
 #' }
 GPC <- function(x, ...) {
   UseMethod("GPC")
@@ -87,7 +88,7 @@ GPC.default <- function(x, ...) {
 #' @describeIn GPC.default The \code{default} interface.
 #' @importFrom purrr map
 #' @export
-GWASPowerCalculator <- function(OR, maf, N, pval=5e-8, model='binary', Ncase) {
+GWASPowerCalculator <- function(OR, maf, N, pval=5e-8, model='binary', Ncase, meta=NULL) {
 
   if (missing(OR)) {
     stop("The parameter 'OR' must be provided as numeric vector type")
@@ -102,10 +103,11 @@ GWASPowerCalculator <- function(OR, maf, N, pval=5e-8, model='binary', Ncase) {
     stop("The parameter 'model' must be either 'linear' or 'binary'")
   }
 
-  power <- purrr::map(OR, findPower, maf, N, pval, model = model, Ncase = Ncase)
+  power <- purrr::map(OR, findPower, maf, N, pval, model = model, Ncase = Ncase, meta = meta)
   power = do.call("cbind",power)
   colnames(power) = OR
   rownames(power) = maf
+  attr(power, 'method') <- 'GWAS'
 
   result <- list(power = power, model = model)
   class(result) <- 'GPC'
@@ -118,20 +120,40 @@ GWASPowerCalculator <- function(OR, maf, N, pval=5e-8, model='binary', Ncase) {
 #' @describeIn GPC
 #' @importFrom stats qchisq pchisq
 #' @export
-findPower <- function(OR, maf, N, pval=5e-8, model, Ncase) {
-  fmt <- sprintf("%s%df","%3.",3)
+findPower <- function(OR, maf, N, pval=5e-8, model, Ncase, meta = NULL) {
 
   beta <- log(OR)
+
   if (model == 'linear') {
+    if (is.null(meta)) {
+      if (length(N) > 1) {
+        stop("Two GWAS detected. Please put only one GWAS")
+      }
+      N.eff <- N
+    } else {
+      N.eff <- sum(N)
+    }
     sigma <- sqrt(1 - 2*maf*(1-maf)*beta^2)
-    SE <- sigma / sqrt(2*maf*(1-maf)*N)
+    SE <- sigma / sqrt(2*maf*(1-maf)*N.eff)
 
   } else if (model == 'binary') {
     if (missing(Ncase)) {
       stop("For binary power calculation, the number of cases must be provided on 'Ncase' parameter")
     }
     phi <- Ncase / N
-    SE <- 1/sqrt(2*maf*(1-maf)*N*phi*(1-phi))
+    if (is.null(meta)) {
+      if (length(N) > 1 || length(Ncase) > 1) {
+        stop("Two GWAS detected. Please put only one GWAS")
+      }
+      N.eff <- N*phi*(1-phi)
+    } else {
+      if (length(N) != length(Ncase)) {
+        stop("The number of study and case are not equal")
+      }
+      N.eff <- sum(N*phi*(1-phi))
+    }
+
+    SE <- 1/sqrt(2*maf*(1-maf)*N.eff)
   } else {
     stop("The paramter 'model' should be either 'linear' or 'binary'")
   }
@@ -141,7 +163,7 @@ findPower <- function(OR, maf, N, pval=5e-8, model, Ncase) {
   power <-  pchisq(q = q.thresh, df = 1, ncp = NCP, lower.tail = FALSE)
 
 
-  return(paste0(round(power*100,2), "%"))
+  return(paste0(format(round(power*100,2),nsmall = 2), "%"))
 }
 
 
@@ -150,6 +172,7 @@ findPower <- function(OR, maf, N, pval=5e-8, model, Ncase) {
 #' @export
 print.GPC <- function(x) {
   obj <- x$power
+  method <- attributes(obj)$method
 
   result <- lineCount(obj)
   line.length <- result$line.length
@@ -162,7 +185,7 @@ print.GPC <- function(x) {
   line.length <- result$line.length
 
   cat("\n")
-  cat(centerprint(paste0("GWAS Power Calculation"), width = line.length))
+  cat(centerprint(paste0(method, " Power Calculation"), width = line.length))
   cat("\n\n")
   cat(head.line, "\n")
   cat(centerprint(paste0("Odds Ratio"), width = line.length))
@@ -194,10 +217,13 @@ print.GPC <- function(x) {
 #' @param x A matrix object
 #' @export
 lineCount <- function(x) {
+  method <- attributes(x)$method
   obj <- as.data.frame(x)
-  columnNames <- c("MAF|", colnames(obj))
+  methodName <- ifelse(method=='GWAS', 'MAF', "Rsq")
+  columnNames <- c(methodName, colnames(obj))
   columnNum <- nchar(columnNames)
   column.nchar <- c(max(nchar(rownames(obj))),unname(sapply(obj,function(x) max(nchar(x)))))
+
 
   column.length <- apply(rbind(columnNum, column.nchar), 2, max)
   line.length <- sum(column.length) + length(columnNames) - 1
