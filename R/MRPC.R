@@ -1,9 +1,26 @@
 #' Mendelian Randomization Power Calculation
 #'
-#' @param OR odds ratio
-#' @param rsq R square (The variance explanied by the )
+#' @description
+#' It calculate the Mendelian randomization power based on the odds ratio, the variance explained by genotype,
+#' and number of case and control.
 #'
-#' @return
+#' The power to detect a causal effect can be calculated as :
+#' \itemize{
+#'  \item {For linear} : {\eqn{\Phi(\beta_1\rho_{GX} \sqrt{N} -z_{(1- {\alpha\over 2})})}}
+#'  \item {For binary} : {\eqn{\Phi(\beta_1\rho_{GX} \sqrt{N P(Y=1)P(Y=0)} -z_{(1- {\alpha\over 2})})}}
+#'}
+#' where \eqn{\rho_{GX}} is the variance explained by the genotype (\eqn{\approx 2f(1-f)\beta^2}).
+#' It can be calculated using effect size \eqn{\beta} and minor allele frequency.
+#'
+#'
+#' @param OR odds ratio
+#' @param rsq The variance explained by the additive effect on the genotype
+#' @param N The total sample number
+#' @param Ncase The number of case
+#' @param Ncontrol The number of control
+#' @param model either 'linear' or 'binary'
+#' @param K the number of instrumental variable
+#' @seealso \link{https://pubmed.ncbi.nlm.nih.gov/24608958/}
 #' @export
 #'
 #' @examples
@@ -20,10 +37,10 @@ MRPC <- function(x, ...) {
 
 
 
-#' @describeIn GPC.default The \code{default} interface.
+#' @describeIn MRPC.default The \code{default} interface.
 #' @importFrom purrr map
 #' @export
-MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model='binary', K=NULL) {
+MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model='binary', K=1) {
 
   if (missing(OR)) {
     stop("The parameter 'OR' must be provided as numeric vector type")
@@ -40,6 +57,7 @@ MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, 
   f.statistics <- ((N-K-1) / K) * (rsq/(1-rsq))
 
   power <- purrr::map(OR, MRFindPower, rsq, N, pval,Ncase = Ncase, Ncontrol=Ncontrol, model = model)
+  #power <- paste0(format(round(power*100,2), nsamll=2), "%")
   power = do.call("cbind",power)
   colnames(power) = OR
   rownames(power) = rsq
@@ -53,8 +71,8 @@ MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, 
 
 
 
-#' @describeIn GPC
-#' @importFrom stats qchisq pchisq
+#' @describeIn MRPC
+#' @importFrom stats pnorm qnorm
 #' @export
 MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model) {
   if (model == 'binary') {
@@ -71,5 +89,9 @@ MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model)
     lower.tail <- ifelse(sign(beta)==-1, FALSE, TRUE)
     power <- pnorm(sqrt(N*rsq)*beta-qnorm(1-pval/2, lower.tail = lower.tail), lower.tail = lower.tail)
   }
-  return(paste0(format(round(power*100,2),nsmall = 2), "%"))
+  return(power)
+  #return(paste0(format(round(power*100,2),nsmall = 2), "%"))
 }
+
+
+

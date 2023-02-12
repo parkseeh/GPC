@@ -162,8 +162,8 @@ findPower <- function(OR, maf, N, pval=5e-8, model, Ncase, meta = NULL) {
   q.thresh <- qchisq(p = pval, df = 1, ncp = 0, lower.tail = FALSE)
   power <-  pchisq(q = q.thresh, df = 1, ncp = NCP, lower.tail = FALSE)
 
-
-  return(paste0(format(round(power*100,2),nsmall = 2), "%"))
+  return(power)
+  #return(paste0(format(round(power*100,2),nsmall = 2), "%"))
 }
 
 
@@ -173,7 +173,6 @@ findPower <- function(OR, maf, N, pval=5e-8, model, Ncase, meta = NULL) {
 print.GPC <- function(x) {
   obj <- x$power
   method <- attributes(obj)$method
-
   result <- lineCount(obj)
   line.length <- result$line.length
   head.line <- paste(rep("_", line.length+2), collapse = "")
@@ -204,13 +203,16 @@ print.GPC <- function(x) {
 
   for (i in 1:dim(res)[1]){
     cat(paste0(rownames(res)[i]), "|", sep="")
-    for(j in 1:length(columnNames)){
+    for(j in 1:length(columnNames)-1){
 
       cat(sapply(res[i,j], centerprint, width = column.length[j] + 2))
     }
     cat("\n")
   }
   cat(tail.line, '\n\n')
+  if (method == 'MR') {
+    cat("F-statistics :", round(x$f.statistics,2))
+  }
 }
 
 
@@ -219,10 +221,13 @@ print.GPC <- function(x) {
 lineCount <- function(x) {
   method <- attributes(x)$method
   obj <- as.data.frame(x)
+  rowN <- rownames(obj)
+  obj <- apply(obj, 2,function(x) paste0(format(round(x*100,2),nsmall = 2), "%"))
+  rownames(obj) <- rowN
   methodName <- ifelse(method=='GWAS', 'MAF', "Rsq")
   columnNames <- c(methodName, colnames(obj))
   columnNum <- nchar(columnNames)
-  column.nchar <- c(max(nchar(rownames(obj))),unname(sapply(obj,function(x) max(nchar(x)))))
+  column.nchar <- c(max(nchar(rownames(obj))),unname(apply(obj,2, function(x) max(nchar(x)))))
 
 
   column.length <- apply(rbind(columnNum, column.nchar), 2, max)
@@ -263,5 +268,4 @@ space <- function(num){
   }
   return(ret)
 }
-
 
