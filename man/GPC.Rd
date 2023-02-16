@@ -18,6 +18,8 @@ GPC(x, ...)
 \item{model}{The regression model used either linear or binary}
 
 \item{Ncase}{The number of Case (applicable only if model is 'binary')}
+
+\item{meta}{Put 'fix' if you want to calculate power for fixed effect of meta analysis}
 }
 \description{
 It calculate the GWAS power based on the odds ratio, minor allele frequency,

@@ -18,20 +18,21 @@
 #' @param N The total sample number
 #' @param Ncase The number of case
 #' @param Ncontrol The number of control
-#' @param model either 'linear' or 'binary'
+#' @param outcome either 'linear' or 'binary'
 #' @param K the number of instrumental variable
 #' @seealso \link{https://pubmed.ncbi.nlm.nih.gov/24608958/}
 #' @export
 #'
 #' @examples
-#' MRPC(OR=c(1.2,1.3,1.4,1.5,1.6), rsq=c(0.1, 0.2, 0.3), N=1000, Ncase=500, Ncontrol=500, model='binary')
+#' MRPC(OR=c(1.2,1.3,1.4,1.5,1.6), rsq=c(0.1, 0.2, 0.3), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1,2,3))
+#' MRPC(OR=c(1.2), rsq=c(0.111111111, 0.022), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1))
 MRPC <- function(x, ...) {
   UseMethod("MRPC")
 }
 
 
 #' @export
-MRPC <- function(x, ...) {
+MRPC.default <- function(x, ...) {
   MRPowerCalculator(...)
 }
 
@@ -40,7 +41,7 @@ MRPC <- function(x, ...) {
 #' @describeIn MRPC.default The \code{default} interface.
 #' @importFrom purrr map
 #' @export
-MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model='binary', K=1) {
+MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, outcome='binary', K=1) {
 
   if (missing(OR)) {
     stop("The parameter 'OR' must be provided as numeric vector type")
@@ -51,19 +52,23 @@ MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, 
   if (missing(N)) {
     stop("The parameter 'N' should be provided as numeric vector type")
   }
-  if (!model %in% c('linear', 'binary')) {
-    stop("The parameter 'model' must be either 'linear' or 'binary'")
+  if (!outcome %in% c('linear', 'binary')) {
+    stop("The parameter 'outcome' must be either 'linear' or 'binary'")
+  }
+  if (length(K) == 1 && length(K) != length(rsq)) {
+    K = rep(K[1], time=length(rsq))
+    message("The number of IV(s) should be same size as rsq")
   }
   f.statistics <- ((N-K-1) / K) * (rsq/(1-rsq))
 
-  power <- purrr::map(OR, MRFindPower, rsq, N, pval,Ncase = Ncase, Ncontrol=Ncontrol, model = model)
+  power <- purrr::map(OR, MRFindPower, rsq, N, pval,Ncase = Ncase, Ncontrol=Ncontrol, outcome = outcome)
   #power <- paste0(format(round(power*100,2), nsamll=2), "%")
   power = do.call("cbind",power)
   colnames(power) = OR
   rownames(power) = rsq
   attr(power, 'method') <- 'MR'
 
-  result <- list(power = power, model = model, f.statistics=f.statistics)
+  result <- list(power = power, outcome = outcome, f.statistics=f.statistics, K=K)
   class(result) <- 'GPC'
 
   return (result)
@@ -74,8 +79,8 @@ MRPowerCalculator <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, 
 #' @describeIn MRPC
 #' @importFrom stats pnorm qnorm
 #' @export
-MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model) {
-  if (model == 'binary') {
+MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, outcome) {
+  if (outcome == 'binary') {
     if (is.null(Ncase) | is.null(Ncontrol)) {
       stop("Please provide the number of Case and Control")
     }
@@ -92,6 +97,5 @@ MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, model)
   return(power)
   #return(paste0(format(round(power*100,2),nsmall = 2), "%"))
 }
-
 
 
