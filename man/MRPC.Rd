@@ -35,6 +35,7 @@ It can be calculated using effect size \eqn{\beta} and minor allele frequency.
 }
 \examples{
 MRPC(OR=c(1.2,1.3,1.4,1.5,1.6), rsq=c(0.1, 0.2, 0.3), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1,2,3))
+MRPC(OR=c(1.2,1.3,1.65,1.87), rsq=c(0.111111111, 0.022), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1))
 }
 \seealso{
 \link{https://pubmed.ncbi.nlm.nih.gov/24608958/}

@@ -25,7 +25,7 @@
 #'
 #' @examples
 #' MRPC(OR=c(1.2,1.3,1.4,1.5,1.6), rsq=c(0.1, 0.2, 0.3), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1,2,3))
-#' MRPC(OR=c(1.2), rsq=c(0.111111111, 0.022), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1))
+#' MRPC(OR=c(1.2,1.3,1.65,1.87), rsq=c(0.111111111, 0.022), N=1000, Ncase=500, Ncontrol=500, outcome='binary', K=c(1,2))
 MRPC <- function(x, ...) {
   UseMethod("MRPC")
 }
@@ -97,5 +97,4 @@ MRFindPower <- function(OR, rsq, N, pval=0.05, Ncase=NULL, Ncontrol=NULL, outcom
   return(power)
   #return(paste0(format(round(power*100,2),nsmall = 2), "%"))
 }
-
 
